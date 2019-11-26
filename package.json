@@ -1,0 +1,23 @@
+{
+  "name": "kong-eureka-sync",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:quancheng-fe/kong-eureka-sync.git",
+  "author": "zephyr <zephyr.workmail@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@grpc/grpc-js": "^0.6.12",
+    "@grpc/proto-loader": "^0.5.3",
+    "@quancheng/hades-service": "^1.0.201911242208",
+    "axios": "^0.19.0",
+    "chokidar": "^3.3.0",
+    "diff": "^4.0.1",
+    "eureka-js-client": "^4.5.0",
+    "glob": "^7.1.6",
+    "js-yaml": "^3.13.1",
+    "lodash.flatten": "^4.4.0",
+    "lodash.isequal": "^4.5.0",
+    "mustache": "^3.1.0",
+    "protobufjs": "^6.8.8"
+  }
+}

@@ -1,0 +1,34 @@
+_format_version: "1.1"
+
+services:
+{{#services}}
+- name: {{name}}
+  host: {{host}}
+  port: 80
+  protocol: grpcs
+  {{#routes.length}}
+  routes:
+  {{#routes}}
+  - name: {{name}}
+    paths:
+    - /{{{servicePath}}}
+    protocols:
+    - grpc
+  {{/routes}}
+  {{/routes.length}}
+{{/services}}
+
+upstreams:
+{{#upstreams}}
+- hash_fallback: none
+  hash_on: none
+  hash_on_cookie_path: /
+  name: {{name}}
+  slots: 100
+  tags: null
+  targets:
+  {{#targets}}
+  - target: {{.}}
+    weight: 100
+  {{/targets}}
+{{/upstreams}}
