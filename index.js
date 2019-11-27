@@ -1,4 +1,5 @@
 const fs = require('fs')
+const path = require('path')
 const { Eureka } = require('eureka-js-client')
 const mustache = require('mustache')
 const chokidar = require('chokidar')
@@ -8,8 +9,22 @@ const protobuf = require('@grpc/proto-loader')
 const grpcLibrary = require('@grpc/grpc-js')
 const glob = require('glob')
 const axios = require('axios')
+const Express = require('express')
+const jsyaml = require('js-yaml')
 
 const template = fs.readFileSync('./template.yaml.mustache', 'utf8')
+const server = Express()
+
+server.get('/config', (req, res) => {
+  fs.readFile(path.join(__dirname, 'config.yaml'), 'utf8', (err, str) => {
+    if (err) {
+      throw err
+    }
+
+    const config = jsyaml.safeLoad(str)
+    res.send(config)
+  })
+})
 
 let cachedServices = []
 let cachedStreams = []
@@ -23,11 +38,11 @@ const servicesFromProto = Object.keys(packageDefinition)
     methods: Object.keys(packageDefinition[name])
   }))
 
-const transformAppNameToHost = (name) => `${name.replace(/\.|\:/gi, '-')}.grpc`
+const transformAppName = (name, ...others) => `${name.replace(/\.|\:/gi, '-')}${others.join('')}`
 
 const generateUpstreamObj = (appName, app) => {
   return {
-    name: transformAppNameToHost(appName),
+    name: transformAppName(appName, '-grpc'),
     targets: app.map((instance) => `${instance.ipAddr}:${instance.port.$ + 1}`)
   }
 }
@@ -36,7 +51,7 @@ const generateServiceObj = (appName, app) => {
   const [serviceName, version] = appName.split(':')
   return {
     name: serviceName.toLowerCase(),
-    host: transformAppNameToHost(appName),
+    host: transformAppName(appName, '.grpc'),
     routes: generateRouteObj(appName)
   }
 }
@@ -50,7 +65,7 @@ const generateRouteObj = (appName) => {
   return flattern(
     serviceMatched.map((s) =>
       s.methods.map((m) => ({
-        name: `${transformAppNameToHost(appName)}-${m}`,
+        name: `${transformAppName(appName)}-${m}`,
         servicePath: `${s.name}/${m}`
       }))
     )
@@ -68,12 +83,15 @@ const client = new Eureka({
   }
 })
 
-client.logger.level('debug')
-
 client.start((err) => {
   if (err) {
     process.exit(1)
   }
+  console.log('eureka client started')
+
+  server.listen(process.env.PORT || 3233, () => {
+    console.log('server started')
+  })
 })
 
 chokidar.watch('./config.yaml').on('all', (event, path) => {
@@ -81,7 +99,7 @@ chokidar.watch('./config.yaml').on('all', (event, path) => {
 })
 
 client.on('registryUpdated', () => {
-  console.log('tick')
+  console.log('eureka registry updated')
   const appNameList = Object.keys(client.cache.app)
   let services = []
   let upstreams = []
@@ -96,7 +114,6 @@ client.on('registryUpdated', () => {
   if (!isConfigEqual) {
     const rendered = mustache.render(template, { services, upstreams })
     fs.writeFile('./config.yaml', rendered, { encoding: 'utf8' }, () => {
-      console.log('file written')
       cachedServices = services
       cachedStreams = upstreams
       axios
