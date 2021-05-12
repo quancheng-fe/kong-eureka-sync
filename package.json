@@ -6,7 +6,7 @@
   "author": "zephyr <zephyr.workmail@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@grpc/grpc-js": "^0.6.12",
+    "@grpc/grpc-js": "^1.1.8",
     "@grpc/proto-loader": "^0.5.3",
     "@quancheng/hades-service": "^1.0.201911242208",
     "@quancheng/meeting-service": "^1.0.201911221631",
